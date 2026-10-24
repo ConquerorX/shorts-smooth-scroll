@@ -35,7 +35,7 @@
 
   // Animasyon durumu. Üstel yaklaşma kullanıyoruz: hedef değişince hız
   // sıfırlanmıyor, akış kesintisiz devam ediyor (jest zincirleme).
-  var anim = { raf: 0, x: 0, target: 0, last: 0, container: null, done: null };
+  var anim = { raf: 0, x: 0, target: 0, last: 0, container: null, done: null, lastMove: 0 };
   var animating = false;
   var restore = null;
   var settleTimer = 0;
@@ -247,6 +247,7 @@
     }
 
     anim.x = from;
+    anim.lastMove = 0;
     anim.last = performance.now();
     startAnimStyles(container);
     anim.raf = requestAnimationFrame(tick);
@@ -254,13 +255,25 @@
 
   function tick(now) {
     var container = anim.container;
-    // Kare atlanmış olsa bile animasyon geri kalmaz, ama sıçramaz da:
-    // dt 64ms ile sınırlı, katsayı dt'ye göre hesaplanıyor.
-    var dt = Math.min(64, Math.max(0, now - anim.last)) / 1000;
+    // YouTube videoyu değiştirirken main thread'i ~50-70ms kilitliyor. Bu blokaj
+    // ham dt ile beslenirse kalan mesafenin yarısı tek karede yutulur ve
+    // "takılma" olarak görünür. dt'yi ~1.5 kareyle sınırlayınca blokaj
+    // sıçramaya değil, kısa bir duraklamaya dönüşüyor.
+    var dt = Math.min(24, Math.max(0, now - anim.last)) / 1000;
     anim.last = now;
 
     var lambda = Core.lambdaForDuration(cfg.duration);
-    anim.x += (anim.target - anim.x) * Core.smoothFactor(lambda, dt);
+    var delta = (anim.target - anim.x) * Core.smoothFactor(lambda, dt);
+
+    // Hız sürekliliği: bir blokajdan sonra kalan mesafenin büyük kısmını tek
+    // karede yutmak yerine, bir önceki karenin en fazla 1.2 katı ilerleriz.
+    // Böylece blokaj "duraklama" olur, "sıçrama" olmaz.
+    if (anim.lastMove > 0) {
+      var cap = anim.lastMove * 1.2 + 0.5;
+      if (Math.abs(delta) > cap) delta = Math.sign(delta) * cap;
+    }
+    anim.x += delta;
+    anim.lastMove = Math.abs(delta);
 
     if (Math.abs(anim.target - anim.x) <= 1) {
       anim.x = anim.target;

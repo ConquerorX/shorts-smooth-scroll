@@ -4,7 +4,7 @@
 
 [![Manifest V3](https://img.shields.io/badge/manifest-v3-c00?style=flat-square)](manifest.json)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-23%20passing-brightgreen?style=flat-square)](#testing)
+[![Tests](https://img.shields.io/badge/tests-24%20passing-brightgreen?style=flat-square)](#testing)
 [![YouTube](https://img.shields.io/badge/verified%20on-youtube.com%2Fshorts-c00?style=flat-square)](#verified-on-the-real-site)
 
 **English** · [Türkçe](README.tr.md)
@@ -128,6 +128,24 @@ Why exponential approach instead of a fixed easing curve:
   never stop and restart;
 - it never overshoots, so you never see the next video peek in.
 
+### Surviving YouTube's video swap
+
+YouTube activates the next Short ~50-100 ms after the scroll starts, and that work
+blocks the main thread for ~50-70 ms (visible as one long frame). Because the
+glide runs on the main thread, the frame that lands after the block must not
+telemport: per-frame movement is capped at 1.2x the previous frame, so the block
+becomes a short pause instead of a jump.
+
+Measured on the live site, same gesture:
+
+| | Largest single-frame movement |
+| --- | --- |
+| Before the cap | ~176 px |
+| After the cap | ~53 px |
+
+The ~60 ms block itself belongs to YouTube's player and cannot be removed from
+this side; what you see is a pause, not a skip.
+
 ### Verified on the real site
 
 Tested against live `youtube.com/shorts` (October 2026): three wheel notches moved
@@ -152,7 +170,7 @@ uses `data-i18n` keys, so no code changes are needed.
 
 ```bash
 npm install
-npm test              # 23 tests: unit + DOM e2e + real extension in real Chrome
+npm test              # 24 tests: unit + DOM e2e + real extension in real Chrome
 npm run test:unit     # pure logic, no browser
 npm run test:e2e      # fixture page, real wheel events
 ```
@@ -160,7 +178,7 @@ npm run test:e2e      # fixture page, real wheel events
 | File | What it proves |
 | --- | --- |
 | `test/core.test.js` | Gesture machine (split notches, trackpad accumulation, direction flips, repeat cadence), geometry, lambda/smoothing math |
-| `test/e2e.test.js` | Real wheel events against a DOM that mirrors the live Shorts layout: one notch = one video, split notch ≠ two videos, fast bursts don't skip, comments panel isn't hijacked, smooth mode aligns, animation is monotonic and lands exactly, mid-flight retargeting chains |
+| `test/e2e.test.js` | Real wheel events against a DOM that mirrors the live Shorts layout: one notch = one video, split notch ≠ two videos, fast bursts don't skip, comments panel isn't hijacked, smooth mode aligns, animation is monotonic and lands exactly, a 90 ms main-thread block does not turn into a jump, mid-flight retargeting chains |
 | `test/extension.test.js` | The unpacked extension is loaded by real Chrome, takes over scrolling on a `youtube.com` origin, and its popup localizes + persists settings |
 
 Notes:

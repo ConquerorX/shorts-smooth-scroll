@@ -17,7 +17,7 @@ const puppeteer = require('puppeteer-core');
 const { findChrome, sleep } = require('./helpers.js');
 
 const ROOT = path.resolve(__dirname, '..');
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 
 let browser;
 let extensionId;

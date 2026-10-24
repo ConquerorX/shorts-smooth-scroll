@@ -83,6 +83,38 @@ async function stopSampling(page) {
   });
 }
 
+function maxStepOf(samples) {
+  let max = 0;
+  for (let i = 1; i < samples.length; i++) max = Math.max(max, Math.abs(samples[i] - samples[i - 1]));
+  return max;
+}
+
+/** Tek adım atıp kare örneklerini döndürür; istenirse animasyon ortasında blokaj yaratır. */
+async function stepSamples(page, options) {
+  const opts = options || {};
+  await page.evaluate(() => {
+    document.querySelector('#shorts-container').scrollTop = 0;
+  });
+  await sleep(250);
+  await page.evaluate((blockAfter) => {
+    window.__blocked = false;
+    if (!blockAfter) return;
+    setTimeout(() => {
+      const start = performance.now();
+      while (performance.now() - start < 90) {
+        /* main thread'i mesgul et */
+      }
+      window.__blocked = true;
+    }, blockAfter);
+  }, opts.blockAfter || 0);
+
+  const point = await centerOf(page, '#shorts-container');
+  await startSampling(page);
+  await wheelAt(page, point.x, point.y, 120);
+  await waitForRest(page);
+  return stopSampling(page);
+}
+
 function assertSmooth(samples, totalDistance) {
   const moving = samples.filter((value, i) => i > 0 && Math.abs(value - samples[i - 1]) > 0.01);
   assert.ok(moving.length >= 8, `animasyon çok kısa: sadece ${moving.length} hareketli kare`);
@@ -244,6 +276,27 @@ test('animasyon sıçramadan, tek yönde ilerleyip tam sınıra oturuyor', async
 
     assert.equal(final, 800, `beklenen 800px, gerçek ${final}px`);
     assertSmooth(samples, 800);
+  } finally {
+    await page.close();
+  }
+});
+
+test('main thread blokajı sıçramaya değil duraklamaya dönüşür', async () => {
+  const page = await openFixture('step', 420);
+  try {
+    const control = await stepSamples(page, {});
+    const blocked = await stepSamples(page, { blockAfter: 70 });
+
+    assert.equal(control.final, 800);
+    assert.equal(blocked.final, 800);
+    assert.equal(await page.evaluate(() => window.__blocked), true, 'blokaj testi çalışmadı');
+
+    const controlMax = maxStepOf(control.samples);
+    const blockedMax = maxStepOf(blocked.samples);
+    assert.ok(
+      blockedMax <= controlMax * 1.15 + 2,
+      `blokaj tek karede sıçrama yaptı: ${blockedMax.toFixed(0)}px (blokajsız en büyük adım ${controlMax.toFixed(0)}px)`
+    );
   } finally {
     await page.close();
   }

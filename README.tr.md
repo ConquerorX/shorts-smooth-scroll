@@ -4,7 +4,7 @@
 
 [![Manifest V3](https://img.shields.io/badge/manifest-v3-c00?style=flat-square)](manifest.json)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-23%20passing-brightgreen?style=flat-square)](#testler)
+[![Tests](https://img.shields.io/badge/tests-24%20passing-brightgreen?style=flat-square)](#testler)
 [![YouTube](https://img.shields.io/badge/verified%20on-youtube.com%2Fshorts-c00?style=flat-square)](#gerçek-sitede-doğrulandı)
 
 [English](README.md) · **Türkçe**
@@ -125,6 +125,24 @@ Sabit bir easing eğrisi yerine üstel yaklaşma kullanmamızın sebebi:
   yeniden başlamaz;
 - asla taşmaz, yani bir sonraki videonun kenarı görünmez.
 
+### YouTube'un video değişimini atlatmak
+
+YouTube, kaydırma başladıktan ~50-100 ms sonra sıradaki Short'u aktive ediyor ve bu
+iş main thread'i ~50-70 ms kilitliyor (tek uzun kare olarak görünür). Kaydırma main
+thread'de çalıştığı için, blokajdan sonra gelen kare ışınlanmamalı: kare başına
+hareket bir öncekinin 1.2 katıyla sınırlı, böylece blokaj sıçrama değil kısa bir
+duraklama oluyor.
+
+Canlı sitede aynı jest için ölçüm:
+
+| | Tek karedeki en büyük hareket |
+| --- | --- |
+| Sınırlamadan önce | ~176 px |
+| Sınırlamadan sonra | ~53 px |
+
+~60 ms'lik blokajın kendisi YouTube oynatıcısına ait ve bu taraftan kaldırılamaz;
+gördüğün şey atlama değil, duraklama.
+
 ### Gerçek sitede doğrulandı
 
 Canlı `youtube.com/shorts` üzerinde test edildi (Ekim 2026): üç tekerlek tıkı
@@ -149,7 +167,7 @@ Yeni dil eklemek tek klasör + bir `messages.json` kopyası. Popup işaretlemesi
 
 ```bash
 npm install
-npm test              # 23 test: birim + DOM e2e + gerçek Chrome'da gerçek eklenti
+npm test              # 24 test: birim + DOM e2e + gerçek Chrome'da gerçek eklenti
 npm run test:unit     # sadece saf mantık, tarayıcı yok
 npm run test:e2e      # fixture sayfası, gerçek tekerlek event'leri
 ```
@@ -157,7 +175,7 @@ npm run test:e2e      # fixture sayfası, gerçek tekerlek event'leri
 | Dosya | Neyi kanıtlıyor |
 | --- | --- |
 | `test/core.test.js` | Jest makinesi (bölünmüş tık, trackpad birikimi, yön değişimi, tekrar temposu), geometri, lambda/yumuşatma matematiği |
-| `test/e2e.test.js` | Canlı Shorts yerleşimini taklit eden DOM'a karşı gerçek tekerlek event'leri: tek tık = tek video, bölünmüş tık iki video değil, hızlı ardışık tıklar atlamıyor, yorum paneli ele geçirilmiyor, akıcı mod hizalanıyor, animasyon tek yönlü ve tam sınıra oturuyor, uçuş ortasında hedef değişimi zincirleniyor |
+| `test/e2e.test.js` | Canlı Shorts yerleşimini taklit eden DOM'a karşı gerçek tekerlek event'leri: tek tık = tek video, bölünmüş tık iki video değil, hızlı ardışık tıklar atlamıyor, yorum paneli ele geçirilmiyor, akıcı mod hizalanıyor, animasyon tek yönlü ve tam sınıra oturuyor, 90 ms'lik main-thread blokajı sıçramaya dönüşmüyor, uçuş ortasında hedef değişimi zincirleniyor |
 | `test/extension.test.js` | Paketlenmemiş eklenti gerçek Chrome tarafından yükleniyor, `youtube.com` kaynağında kaydırmayı devralıyor, popup çeviriyi ve ayarları doğru işliyor |
 
 Notlar:
