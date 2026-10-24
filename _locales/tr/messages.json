@@ -1,0 +1,50 @@
+{
+  "extName": {
+    "message": "Shorts Smooth Scroll",
+    "description": "Eklenti adı"
+  },
+  "extDescription": {
+    "message": "Chromium tabanlı tarayıcılarda YouTube Shorts kaydırmasını düzeltir. Her tekerlek jesti tam olarak bir videoya oturur.",
+    "description": "Tarayıcıda görünen eklenti açıklaması"
+  },
+  "actionTitle": {
+    "message": "Shorts Smooth Scroll",
+    "description": "Araç çubuğu düğmesi ipucu"
+  },
+  "tagline": {
+    "message": "youtube.com/shorts için kaydırma düzeltmesi"
+  },
+  "enabled": {
+    "message": "Etkin"
+  },
+  "modeLegend": {
+    "message": "Kaydırma modu"
+  },
+  "modeStepTitle": {
+    "message": "Tek jest = tek short"
+  },
+  "modeStepHint": {
+    "message": "Her tekerlek jesti tam olarak bir videoya oturur. Atlama yapmaz."
+  },
+  "modeFlowTitle": {
+    "message": "Akıcı"
+  },
+  "modeFlowHint": {
+    "message": "Jest boyunca akıcı kayar, bitince en yakın videoya hizalanır."
+  },
+  "speedLegend": {
+    "message": "Animasyon"
+  },
+  "speedFast": {
+    "message": "Hızlı"
+  },
+  "speedNormal": {
+    "message": "Normal"
+  },
+  "speedSoft": {
+    "message": "Yumuşak"
+  },
+  "hint": {
+    "message": "Değişiklikler açık Shorts sekmelerine anında uygulanır. Takıldıysa sekmeyi Ctrl+R ile yenile."
+  }
+}

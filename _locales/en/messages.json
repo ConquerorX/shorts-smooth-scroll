@@ -1,0 +1,50 @@
+{
+  "extName": {
+    "message": "Shorts Smooth Scroll",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Fixes janky YouTube Shorts scrolling in Chromium browsers. One wheel gesture lands on exactly one video.",
+    "description": "Extension description shown in the browser"
+  },
+  "actionTitle": {
+    "message": "Shorts Smooth Scroll",
+    "description": "Toolbar button tooltip"
+  },
+  "tagline": {
+    "message": "Scroll fix for youtube.com/shorts"
+  },
+  "enabled": {
+    "message": "Enabled"
+  },
+  "modeLegend": {
+    "message": "Scroll mode"
+  },
+  "modeStepTitle": {
+    "message": "One gesture = one short"
+  },
+  "modeStepHint": {
+    "message": "Every wheel gesture lands on exactly one video. Never skips."
+  },
+  "modeFlowTitle": {
+    "message": "Smooth"
+  },
+  "modeFlowHint": {
+    "message": "Glides while the gesture lasts, then aligns to the nearest video."
+  },
+  "speedLegend": {
+    "message": "Animation"
+  },
+  "speedFast": {
+    "message": "Fast"
+  },
+  "speedNormal": {
+    "message": "Normal"
+  },
+  "speedSoft": {
+    "message": "Soft"
+  },
+  "hint": {
+    "message": "Changes apply to open Shorts tabs instantly. If it gets stuck, reload the tab with Ctrl+R."
+  }
+}
