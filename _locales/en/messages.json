@@ -32,6 +32,12 @@
   "modeFlowHint": {
     "message": "Glides while the gesture lasts, then aligns to the nearest video."
   },
+  "modeJumpTitle": {
+    "message": "Instant (no animation)"
+  },
+  "modeJumpHint": {
+    "message": "Cuts straight to the next video in a single frame, like the arrow keys."
+  },
   "speedLegend": {
     "message": "Animation"
   },

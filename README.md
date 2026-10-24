@@ -47,7 +47,7 @@ snap while it does so.
   the motion continues without stopping, restarting, or jumping.
 - **Hands off everything else.** Nested scroll areas (comment panel, description),
   `Ctrl`+wheel zoom, touch input and the rest of the page behave natively.
-- **Two modes and three speeds**, with a live preview on any open Shorts tab.
+- **Three modes and three speeds**, with a live preview on any open Shorts tab.
 - **Localized UI** (English + Turkish) via `chrome.i18n`; add a folder to add a language.
 - **No network access, no analytics, no background service worker.** One content
   script on `youtube.com`, `storage` permission only.
@@ -73,7 +73,7 @@ Click the toolbar icon:
 | Setting | Values | Default |
 | --- | --- | --- |
 | **Enabled** | on / off | on |
-| **Scroll mode** | *One gesture = one short* / *Smooth* | one gesture = one short |
+| **Scroll mode** | *One gesture = one short* / *Smooth* / *Instant* | one gesture = one short |
 | **Animation** | Fast (240 ms) / Normal (420 ms) / Soft (620 ms) | Normal |
 
 - **One gesture = one short** — every wheel gesture lands on exactly one video.
@@ -82,6 +82,9 @@ Click the toolbar icon:
 - **Smooth** — native scrolling runs during the gesture (snap is muted), then the
   feed glides to the nearest video when the gesture ends. This is the closest to
   Firefox's feel.
+- **Instant** — zero animation. The feed cuts to the next/previous video in a
+  single frame, exactly like pressing `↓` / `↑`. The animation speed setting is
+  disabled in this mode.
 
 Settings live in `chrome.storage.sync`, so they follow your Chrome profile.
 
@@ -111,12 +114,13 @@ drift.
 wheel (capture, passive: false)
   ├─ ignore: ctrl+wheel, nested scroller under the cursor, clicks outside the feed
   ├─ flow mode  → mute snap during the gesture, align to nearest item on settle
-  └─ step mode  → preventDefault
+  └─ step/jump mode → preventDefault
         gesture machine: 1 gesture → 1 step (30px threshold, 150ms quiet gap,
                           one extra step per 420ms while spinning)
         resolve target: nearest item offset + direction (falls back to a
                         viewport-sized step if the DOM is unrecognizable)
-        glide: x += (target - x) * (1 - e^(-λ·dt)), λ = 4560 / duration
+        step mode: glide: x += (target - x) * (1 - e^(-λ·dt)), λ = 4560 / duration
+        jump mode: assign scrollTop once — no intermediate frames at all
         per frame: scroll-snap + scroll-behavior forced to none, restored on finish
 ```
 
@@ -170,7 +174,7 @@ uses `data-i18n` keys, so no code changes are needed.
 
 ```bash
 npm install
-npm test              # 24 tests: unit + DOM e2e + real extension in real Chrome
+npm test              # 27 tests: unit + DOM e2e + real extension in real Chrome
 npm run test:unit     # pure logic, no browser
 npm run test:e2e      # fixture page, real wheel events
 ```
@@ -178,8 +182,8 @@ npm run test:e2e      # fixture page, real wheel events
 | File | What it proves |
 | --- | --- |
 | `test/core.test.js` | Gesture machine (split notches, trackpad accumulation, direction flips, repeat cadence), geometry, lambda/smoothing math |
-| `test/e2e.test.js` | Real wheel events against a DOM that mirrors the live Shorts layout: one notch = one video, split notch ≠ two videos, fast bursts don't skip, comments panel isn't hijacked, smooth mode aligns, animation is monotonic and lands exactly, a 90 ms main-thread block does not turn into a jump, mid-flight retargeting chains |
-| `test/extension.test.js` | The unpacked extension is loaded by real Chrome, takes over scrolling on a `youtube.com` origin, and its popup localizes + persists settings |
+| `test/e2e.test.js` | Real wheel events against a DOM that mirrors the live Shorts layout: one notch = one video, split notch ≠ two videos, fast bursts don't skip, comments panel isn't hijacked, smooth mode aligns, animation is monotonic and lands exactly, a 90 ms main-thread block does not turn into a jump, mid-flight retargeting chains, instant mode produces exactly one jump frame in both directions |
+| `test/extension.test.js` | The unpacked extension is loaded by real Chrome, takes over scrolling on a `youtube.com` origin, instant mode jumps in a single frame there too, and its popup localizes + persists settings |
 
 Notes:
 
@@ -211,6 +215,7 @@ __shortsSmoothScroll.state()                      // container, item count, anim
 __shortsSmoothScroll.getConfig()                  // { enabled, mode, duration }
 __shortsSmoothScroll.configure({ duration: 620 }) // soft
 __shortsSmoothScroll.configure({ mode: 'flow' })
+__shortsSmoothScroll.configure({ mode: 'jump' })   // instant, no animation
 __shortsSmoothScroll.step(1)                      // programmatic single step
 ```
 

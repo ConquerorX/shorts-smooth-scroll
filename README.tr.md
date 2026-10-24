@@ -48,7 +48,7 @@ olarak devre dışı bırakıyor.
 - **Diğer her şeye karışmaz.** İç içe kaydırılabilir alanlar (yorum paneli,
   açıklama), `Ctrl`+tekerlek zoom'u, dokunmatik giriş ve sayfanın geri kalanı
   native davranır.
-- **İki mod, üç hız**, açık Shorts sekmelerine anında uygulanır.
+- **Üç mod, üç hız**, açık Shorts sekmelerine anında uygulanır.
 - **Çok dilli arayüz** (Türkçe + İngilizce), `chrome.i18n` ile. Yeni dil eklemek
   için tek klasör yeterli.
 - **Ağ erişimi yok, analitik yok, arka plan servisi yok.** `youtube.com` üzerinde
@@ -74,7 +74,7 @@ Araç çubuğundaki simgeye tıkla:
 | Ayar | Değerler | Varsayılan |
 | --- | --- | --- |
 | **Etkin** | açık / kapalı | açık |
-| **Kaydırma modu** | *Tek jest = tek short* / *Akıcı* | tek jest = tek short |
+| **Kaydırma modu** | *Tek jest = tek short* / *Akıcı* / *Anında* | tek jest = tek short |
 | **Animasyon** | Hızlı (240 ms) / Normal (420 ms) / Yumuşak (620 ms) | Normal |
 
 - **Tek jest = tek short** — her wheel jesti tam olarak bir videoya oturur. Hızlı
@@ -82,6 +82,8 @@ Araç çubuğundaki simgeye tıkla:
   tempoda tekrarlanır (klavye tuş tekrarı gibi).
 - **Akıcı** — jest boyunca native kaydırma çalışır (snap susturulur), jest bitince
   feed en yakın videoya kayar. Firefox hissine en yakın mod.
+- **Anında** — sıfır animasyon. Feed tek karede sonraki/önceki videoya atlar,
+  tıpkı `↓` / `↑` tuşlarına basmak gibi. Bu modda animasyon hızı ayarı devre dışı.
 
 Ayarlar `chrome.storage.sync`'te tutulur, Chrome profilinle birlikte taşınır.
 
@@ -110,11 +112,12 @@ farklı olsa bile (canlıda 720 px'e 744 px) kayma olmuyor.
 wheel (capture, passive: false)
   ├─ yoksay: ctrl+tekerlek, imleç altında iç içe scroller, feed dışına tıklama
   ├─ akıcı mod → jest boyunca snap'i sustur, bitince en yakın öğeye hizala
-  └─ adım modu → preventDefault
+  └─ adım/anında modu → preventDefault
         jest makinesi: 1 jest → 1 adım (30px eşik, 150ms sessizlik,
                         çevirmeye devam ederken 420ms'de bir ek adım)
         hedef: en yakın öğe ofseti + yön (DOM tanınmazsa viewport boyu adım)
-        kaydırma: x += (hedef - x) * (1 - e^(-λ·dt)), λ = 4560 / süre
+        adım modu: x += (hedef - x) * (1 - e^(-λ·dt)), λ = 4560 / süre
+        anında modu: scrollTop tek seferde atanır — ara kare hiç oluşmaz
         her karede: scroll-snap + scroll-behavior none, bitince geri alınır
 ```
 
@@ -167,7 +170,7 @@ Yeni dil eklemek tek klasör + bir `messages.json` kopyası. Popup işaretlemesi
 
 ```bash
 npm install
-npm test              # 24 test: birim + DOM e2e + gerçek Chrome'da gerçek eklenti
+npm test              # 27 test: birim + DOM e2e + gerçek Chrome'da gerçek eklenti
 npm run test:unit     # sadece saf mantık, tarayıcı yok
 npm run test:e2e      # fixture sayfası, gerçek tekerlek event'leri
 ```
@@ -175,8 +178,8 @@ npm run test:e2e      # fixture sayfası, gerçek tekerlek event'leri
 | Dosya | Neyi kanıtlıyor |
 | --- | --- |
 | `test/core.test.js` | Jest makinesi (bölünmüş tık, trackpad birikimi, yön değişimi, tekrar temposu), geometri, lambda/yumuşatma matematiği |
-| `test/e2e.test.js` | Canlı Shorts yerleşimini taklit eden DOM'a karşı gerçek tekerlek event'leri: tek tık = tek video, bölünmüş tık iki video değil, hızlı ardışık tıklar atlamıyor, yorum paneli ele geçirilmiyor, akıcı mod hizalanıyor, animasyon tek yönlü ve tam sınıra oturuyor, 90 ms'lik main-thread blokajı sıçramaya dönüşmüyor, uçuş ortasında hedef değişimi zincirleniyor |
-| `test/extension.test.js` | Paketlenmemiş eklenti gerçek Chrome tarafından yükleniyor, `youtube.com` kaynağında kaydırmayı devralıyor, popup çeviriyi ve ayarları doğru işliyor |
+| `test/e2e.test.js` | Canlı Shorts yerleşimini taklit eden DOM'a karşı gerçek tekerlek event'leri: tek tık = tek video, bölünmüş tık iki video değil, hızlı ardışık tıklar atlamıyor, yorum paneli ele geçirilmiyor, akıcı mod hizalanıyor, animasyon tek yönlü ve tam sınıra oturuyor, 90 ms'lik main-thread blokajı sıçramaya dönüşmüyor, uçuş ortasında hedef değişimi zincirleniyor, anında mod iki yönde de tam olarak tek atlama karesi üretiyor |
+| `test/extension.test.js` | Paketlenmemiş eklenti gerçek Chrome tarafından yükleniyor, `youtube.com` kaynağında kaydırmayı devralıyor, anında mod orada da tek karede atlıyor, popup çeviriyi ve ayarları doğru işliyor |
 
 Notlar:
 
@@ -208,6 +211,7 @@ __shortsSmoothScroll.state()                      // konteyner, öğe sayısı, 
 __shortsSmoothScroll.getConfig()                  // { enabled, mode, duration }
 __shortsSmoothScroll.configure({ duration: 620 }) // yumuşak
 __shortsSmoothScroll.configure({ mode: 'flow' })
+__shortsSmoothScroll.configure({ mode: 'jump' })   // anında, animasyonsuz
 __shortsSmoothScroll.step(1)                      // programatik tek adım
 ```
 

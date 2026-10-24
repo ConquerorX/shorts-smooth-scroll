@@ -5,6 +5,7 @@ const DEFAULTS = { enabled: true, mode: 'step', duration: 420 };
 const enabledInput = document.getElementById('enabled');
 const modeInputs = Array.from(document.querySelectorAll('input[name="mode"]'));
 const speedInputs = Array.from(document.querySelectorAll('input[name="speed"]'));
+const speedField = document.getElementById('speedField');
 
 function localize() {
   for (const el of document.querySelectorAll('[data-i18n]')) {
@@ -26,6 +27,10 @@ function render(cfg) {
     if (Math.abs(Number(input.value) - duration) < Math.abs(Number(closest.value) - duration)) closest = input;
   }
   if (closest) closest.checked = true;
+
+  // Anında modda animasyon süresinin anlamı yok.
+  speedField.disabled = cfg.mode === 'jump';
+  speedField.style.opacity = cfg.mode === 'jump' ? '0.45' : '';
 }
 
 localize();
@@ -40,7 +45,10 @@ enabledInput.addEventListener('change', () => {
 
 for (const input of modeInputs) {
   input.addEventListener('change', () => {
-    if (input.checked) chrome.storage.sync.set({ mode: input.value });
+    if (!input.checked) return;
+    chrome.storage.sync.set({ mode: input.value });
+    speedField.disabled = input.value === 'jump';
+    speedField.style.opacity = input.value === 'jump' ? '0.45' : '';
   });
 }
 

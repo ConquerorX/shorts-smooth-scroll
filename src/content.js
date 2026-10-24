@@ -45,7 +45,7 @@
   function applyConfig(values) {
     if (!values) return;
     if (typeof values.enabled === 'boolean') cfg.enabled = values.enabled;
-    if (values.mode === 'step' || values.mode === 'flow') cfg.mode = values.mode;
+    if (values.mode === 'step' || values.mode === 'flow' || values.mode === 'jump') cfg.mode = values.mode;
     if (typeof values.duration === 'number' && isFinite(values.duration)) cfg.duration = values.duration;
   }
 
@@ -291,6 +291,33 @@
     anim.raf = requestAnimationFrame(tick);
   }
 
+  /**
+   * Anında zıplama: animasyon yok, hedefe tek karede oturur (ok tuşu hissi).
+   *
+   * `scrollTop` ataması tek karede gerçekleştiği için arada hiçbir ara konum
+   * görünmüyor. Atama sırasında `scroll-behavior` ve `scroll-snap-type`
+   * kapatılıyor; konum tam öğe sınırı olduğu için snap geri alınınca hiçbir şey
+   * kaymıyor, yani "milim" düzeltme animasyonu da oluşmuyor.
+   */
+  function jumpTo(container, targetY) {
+    if (anim.raf) {
+      cancelAnimationFrame(anim.raf);
+      anim.raf = 0;
+    }
+    anim.done = null;
+    anim.container = container;
+    anim.x = targetY;
+    anim.target = targetY;
+    anim.lastMove = 0;
+    animating = false;
+
+    startAnimStyles(container);
+    setScrollY(container, targetY);
+    requestAnimationFrame(function () {
+      applyRestore();
+    });
+  }
+
   /** Animasyonu iptal et, stilleri geri al (native kaydırma devralacaksa). */
   function hardStop() {
     if (anim.raf) {
@@ -362,6 +389,11 @@
 
     if (target === null) target = pageTarget(context.container, dir, base);
     if (target === null) return;
+
+    if (cfg.mode === 'jump') {
+      jumpTo(context.container, target);
+      return;
+    }
 
     animating = true;
     glideTo(context.container, target, function () {

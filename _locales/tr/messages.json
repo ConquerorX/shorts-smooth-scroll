@@ -32,6 +32,12 @@
   "modeFlowHint": {
     "message": "Jest boyunca akıcı kayar, bitince en yakın videoya hizalanır."
   },
+  "modeJumpTitle": {
+    "message": "Anında (animasyonsuz)"
+  },
+  "modeJumpHint": {
+    "message": "Tek karede sonraki videoya atlar; ok tuşlarıyla geçiş gibi."
+  },
   "speedLegend": {
     "message": "Animasyon"
   },

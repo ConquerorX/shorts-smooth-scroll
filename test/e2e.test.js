@@ -302,6 +302,64 @@ test('main thread blokajı sıçramaya değil duraklamaya dönüşür', async ()
   }
 });
 
+test('anında mod: tek tık tek karede atlar, hiçbir ara kare yok', async () => {
+  const page = await openFixture('jump');
+  try {
+    await page.evaluate(() => {
+      document.querySelector('#shorts-container').scrollTop = 0;
+    });
+    await sleep(150);
+
+    const point = await centerOf(page, '#shorts-container');
+    await startSampling(page);
+    await wheelAt(page, point.x, point.y, 120);
+
+    // Animasyon yok: tık biter bitmez konum çoktan hedefte olmalı.
+    const immediate = await page.$eval('#shorts-container', (el) => el.scrollTop);
+    assert.equal(immediate, 800, `tıktan hemen sonra 800px olmalıydı, ${immediate}px`);
+
+    await sleep(300);
+    const { samples, final } = await stopSampling(page);
+    assert.equal(final, 800, `son konum 800px olmalıydı, ${final}px`);
+    assert.deepEqual(
+      [...new Set(samples)].sort((a, b) => a - b),
+      [0, 800],
+      `ara kare görülmemeliydi: ${[...new Set(samples)].join(', ')}`
+    );
+    assert.equal(
+      samples.filter((value, i) => i > 0 && value !== samples[i - 1]).length,
+      1,
+      'tek karede tek sıçrama olmalı'
+    );
+  } finally {
+    await page.close();
+  }
+});
+
+test('anında mod: geri yönde de tek karede döner, jest makinesi geçerli', async () => {
+  const page = await openFixture('jump');
+  try {
+    const point = await centerOf(page, '#shorts-container');
+    // Parçalanmış tek tık: yine tek video.
+    for (let i = 0; i < 3; i++) {
+      await wheelAt(page, point.x, point.y, 40);
+      await sleep(15);
+    }
+    assert.equal(await page.$eval('#shorts-container', (el) => el.scrollTop), 800);
+
+    await sleep(250);
+    await wheelAt(page, point.x, point.y, -120);
+    assert.equal(await page.$eval('#shorts-container', (el) => el.scrollTop), 0);
+    assert.equal(
+      await page.evaluate(() => window.__shortsSmoothScroll.state().animating),
+      false,
+      'anında modda animasyon durumu hiç açılmamalı'
+    );
+  } finally {
+    await page.close();
+  }
+});
+
 test('animasyon sürerken yeni jest hedefi kaydırır, akış kesilmez', async () => {
   const page = await openFixture('step', 620);
   try {

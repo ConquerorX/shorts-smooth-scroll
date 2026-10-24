@@ -17,7 +17,7 @@ const puppeteer = require('puppeteer-core');
 const { findChrome, sleep } = require('./helpers.js');
 
 const ROOT = path.resolve(__dirname, '..');
-const VERSION = '1.1.1';
+const VERSION = '1.1.2';
 
 let browser;
 let extensionId;
@@ -79,6 +79,37 @@ test('eklenti youtube.com üzerinde wheel jestini devralır', async () => {
     assert.equal(scrollTop, 800, `beklenen tam olarak 2. video (800px), gerçek ${scrollTop}px`);
   } finally {
     await page.close();
+  }
+});
+
+test('anında mod gerçek eklenti üzerinden animasyonsuz atlıyor', async () => {
+  const popup = await browser.newPage();
+  await popup.goto(`chrome-extension://${extensionId}/src/popup.html`, { waitUntil: 'load' });
+  await popup.evaluate(() => new Promise((resolve) => chrome.storage.sync.set({ mode: 'jump' }, resolve)));
+  await popup.close();
+
+  const page = await openYoutubeShorts();
+  try {
+    // Content script ayarları asenkron okuyor.
+    await sleep(300);
+    await page.mouse.move(500, 400);
+    await page.mouse.wheel({ deltaY: 120 });
+
+    const immediate = await page.$eval('#shorts-container', (el) => el.scrollTop);
+    assert.equal(immediate, 800, `anında atlamalıydı, gerçek ${immediate}px`);
+
+    // Snap geri açıldıktan sonra da konum kaymamalı (milim düzeltme olmasın).
+    await sleep(500);
+    const settled = await page.$eval('#shorts-container', (el) => el.scrollTop);
+    assert.equal(settled, 800, `konum kaydı: ${settled}px`);
+  } finally {
+    await page.close();
+    const reset = await browser.newPage();
+    await reset.goto(`chrome-extension://${extensionId}/src/popup.html`, { waitUntil: 'load' });
+    await reset.evaluate(
+      () => new Promise((resolve) => chrome.storage.sync.set({ mode: 'step', duration: 420 }, resolve))
+    );
+    await reset.close();
   }
 });
 
